@@ -1,0 +1,466 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="dashboard-header">
+    <h2>Welcome back, {{ user.username }} 👋</h2>
+    <!-- ================= WEEKLY SUMMARY ================= -->
+<section class="card summary-card">
+    <h3>📊 Weekly Summary</h3>
+
+    {% if weekly_entries %}
+    <div class="summary-grid">
+        <div>
+            <strong>Average Mood</strong>
+            <p>{{ avg_mood }}/5</p>
+        </div>
+        <div>
+            <strong>Best Mood</strong>
+            <p>{{ max_mood }}/5</p>
+        </div>
+        <div>
+            <strong>Lowest Mood</strong>
+            <p>{{ min_mood }}/5</p>
+        </div>
+        <div>
+            <strong>Entries</strong>
+            <p>{{ weekly_entries|length }}</p>
+        </div>
+    </div>
+    {% else %}
+        <p>No entries this week.</p>
+    {% endif %}
+</section>
+    <p class="subtitle">Track your thoughts, mood, and wellbeing</p>
+</div>
+
+<!-- ================= NEW ENTRY CARD ================= -->
+<section class="card" id="new-entry">
+    <h3>✍ New Journal Entry</h3>
+
+    <form method="post" action="{{ url_for('add_entry') }}" enctype="multipart/form-data" class="entry-form">
+        <div class="form-group">
+            <label>📸 Upload Image (optional)</label>
+            <input type="file" name="image" accept="image/*">
+        </div>
+        <textarea name="content"
+                  rows="4"
+                  placeholder="How are you feeling today?"
+                  required></textarea>
+
+        <div class="form-grid">
+
+            <!-- Mood -->
+            <div>
+                <label>Mood</label>
+                <input type="range" name="mood" id="mood" min="1" max="5" value="3">
+                <span class="range-value" id="moodValue">3</span>
+            </div>
+
+            <!-- Emotion -->
+            <div>
+                <label>Emotion</label>
+                <select name="emotion" required>
+                    <option value="Calm">😌 Calm</option>
+                    <option value="Happy">😊 Happy</option>
+                    <option value="Anxious">😰 Anxious</option>
+                    <option value="Sad">😢 Sad</option>
+                    <option value="Stressed">😣 Stressed</option>
+                </select>
+            </div>
+
+            <!-- Energy -->
+            <div>
+                <label>Energy</label>
+                <input type="range" name="energy" min="1" max="5" value="3">
+            </div>
+
+            <!-- Sleep -->
+            <div>
+                <label>Sleep</label>
+                <input type="range" name="sleep" min="1" max="5" value="3">
+            </div>
+
+        </div>
+
+        <!-- Physical sensations -->
+    <h4 class="form-section-title">🧍 Physical Sensations</h4>
+    <div class="form-grid">
+      <div>
+        <label>Jaw tension</label>
+        <input type="range" name="jaw_tension" min="1" max="5">
+      </div>
+      <div>
+        <label>Shoulder tension</label>
+        <input type="range" name="shoulder_tension" min="1" max="5">
+      </div>
+      <div>
+        <label>Stomach discomfort</label>
+        <input type="range" name="stomach_discomfort" min="1" max="5">
+      </div>
+      <div>
+        <label>Headache</label>
+        <input type="range" name="headache" min="1" max="5">
+      </div>
+    </div>
+
+           <!-- ================= THOUGHT LOG ================= -->
+      <details class="card soft-card">
+        <summary>🧠 Thought Log (optional)</summary>
+
+        <div class="form-group">
+          <label>🔔 Trigger event</label>
+             <input type="text" name="trigger_event"
+                placeholder="I felt this when ___ happened">
+        </div>
+
+        <div class="form-group">
+           <label>💭 Negative thought</label>
+            <textarea name="negative_thought" rows="2"
+                placeholder="What thought showed up?"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>🔄 Reframed thought</label>
+            <textarea name="reframed_thought" rows="2"
+               placeholder="A more balanced or kinder thought"></textarea>
+        </div>
+      </details>
+
+      <!-- ================= GRATITUDE & AFFIRMATIONS ================= -->
+<details class="card soft-card">
+  <summary>🌱 Gratitude & Affirmations (optional)</summary>
+
+  <div class="form-grid">
+    <input type="text" name="gratitude_1" placeholder="Grateful for…">
+    <input type="text" name="gratitude_2" placeholder="Another small win…">
+    <input type="text" name="gratitude_3" placeholder="Something positive…">
+  </div>
+
+  <div class="form-group">
+    <label>✨ Daily affirmation</label>
+    <input type="text" name="affirmation"
+           placeholder="e.g. I am allowed to take up space">
+  </div>
+</details>
+
+<form method="post" action="{{ url_for('save_weekly_reflection') }}">
+
+        <button type="submit" class="primary-btn">Save Entry</button>
+    </form>
+</section>
+
+<!-- ================= JOURNAL ENTRIES ================= -->
+<section class="card">
+    <h3>📔 Your Journal Entries</h3>
+
+    {% if entries %}
+        {% for entry in entries %}
+        <div class="entry-card mood-{{ entry.mood }}">
+
+          {% for media in entry.media %}
+  {% if media.media_type == 'image' %}
+    <img src="{{ url_for('static', filename=media.file_path) }}"
+         style="max-width:200px; border-radius:8px; margin-top:10px;">
+  {% endif %}
+{% endfor %}
+            <div class="entry-header">
+                <span class="mood-badge mood-{{ entry.mood }}">
+                    {% if entry.mood == 1 %} 😞 Very Low
+                    {% elif entry.mood == 2 %} 😕 Low
+                    {% elif entry.mood == 3 %} 😐 Neutral
+                    {% elif entry.mood == 4 %} 🙂 Good
+                    {% elif entry.mood == 5 %} 😄 Very Good
+                    {% endif %}
+                </span>
+
+                <small>{{ entry.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+            </div>
+
+            <p class="entry-text">{{ entry.content }}</p>
+
+            <div class="entry-meta">
+                <span>Emotion: <strong>{{ entry.emotion }}</strong></span>
+                <span>Energy: {{ entry.energy }}/5</span>
+                <span>Sleep: {{ entry.sleep }}/5</span>
+            </div>
+
+            {% if entry.jaw_tension or entry.shoulder_tension %}
+            <div class="physical-box">
+              <strong>🧍 Physical sensations:</strong>
+                <span>Jaw: {{ entry.jaw_tension }}/5</span>
+                <span>Shoulders: {{ entry.shoulder_tension }}/5</span>
+                <span>Stomach: {{ entry.stomach_discomfort }}/5</span>
+                <span>Head: {{ entry.headache }}/5</span>
+            </div>
+           {% endif %}
+
+             <div class="actions">
+                <a href="{{ url_for('edit_entry', id=entry.id) }}">✏ Edit</a>
+                <a href="{{ url_for('delete_entry', id=entry.id) }}"
+                   onclick="return confirm('Delete this entry?')">🗑 Delete</a>
+            </div>
+
+           {% if entry.trigger_event or entry.negative_thought %}
+          <div class="reflection-box">
+            <strong>🧠 Thought reflection</strong>
+
+              {% if entry.trigger_event %}
+                <p><em>Trigger:</em> {{ entry.trigger_event }}</p>
+                   {% endif %}
+
+                   {% if entry.negative_thought %}
+                <p><em>Thought:</em> {{ entry.negative_thought }}</p>
+                   {% endif %}
+
+                   {% if entry.reframed_thought %}
+                <p><em>Reframe:</em> {{ entry.reframed_thought }}</p>
+                   {% endif %}
+          </div>
+              {% endif %}
+
+              {% if entry.gratitude_1 or entry.affirmation %}
+          <div class="gratitude-box">
+             <strong>🌱 Gratitude</strong>
+            <ul>
+               {% if entry.gratitude_1 %}<li>{{ entry.gratitude_1 }}</li>{% endif %}
+               {% if entry.gratitude_2 %}<li>{{ entry.gratitude_2 }}</li>{% endif %}
+                {% if entry.gratitude_3 %}<li>{{ entry.gratitude_3 }}</li>{% endif %}
+            </ul>
+
+               {% if entry.affirmation %}
+                 <p class="affirmation">✨ {{ entry.affirmation }}</p>
+               {% endif %}
+          </div>
+               {% endif %}
+               {% if entry.gratitude_1 or entry.affirmation %}
+          <div class="gratitude-box">
+            <strong>🌱 Gratitude</strong>
+            <ul>
+               {% if entry.gratitude_1 %}<li>{{ entry.gratitude_1 }}</li>{% endif %}
+               {% if entry.gratitude_2 %}<li>{{ entry.gratitude_2 }}</li>{% endif %}
+               {% if entry.gratitude_3 %}<li>{{ entry.gratitude_3 }}</li>{% endif %}
+               </ul>
+
+               {% if entry.affirmation %}
+             <p class="affirmation">✨ {{ entry.affirmation }}</p>
+               {% endif %}
+          </div>
+               {% endif %}
+
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="empty">No journal entries yet. Start writing today ✨</p>
+    {% endif %}
+</section>
+
+<!-- ================= MOOD CHART ================= -->
+<section class="card">
+    <h3>📈 Mood History</h3>
+    <canvas id="moodChart" width="600" height="250"></canvas>
+</section>
+
+<script>
+const moodData = [
+  {% for entry in entries %}
+    {{ entry.mood }},
+  {% endfor %}
+].reverse();
+
+const labels = moodData.map((_, i) => `Entry ${i + 1}`);
+
+if (moodData.length > 0) {
+  const ctx = document.getElementById('moodChart').getContext('2d');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Mood Level',
+        data: moodData,
+        borderColor: '#4f46e5',
+        backgroundColor: 'rgba(79, 70, 229, 0.15)',
+        tension: 0.4,
+        fill: true,
+        pointRadius: 5,
+        pointBackgroundColor: '#4f46e5'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          min: 1,
+          max: 5,
+          ticks: {
+            stepSize: 1,
+            callback: value => {
+              return ['😞','😕','😐','🙂','😄'][value - 1];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+</script>
+
+<!-- ================= MOOD VS SLEEP CHART ================= -->
+<section class="card">
+  <h3>😴 Mood vs Sleep</h3>
+  <canvas id="moodSleepChart" height="250"></canvas>
+</section>
+
+<script>
+const moodSleepPoints = [
+  {% for entry in entries if entry.sleep is not none %}
+    { x: {{ entry.sleep }}, y: {{ entry.mood }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+if (moodSleepPoints.length > 0) {
+  const canvas = document.getElementById('moodSleepChart');
+
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+
+    new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Mood vs Sleep',
+          data: moodSleepPoints,
+          backgroundColor: '#4f46e5',
+          pointRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Sleep (1–5)'
+            },
+            min: 1,
+            max: 5
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Mood (1–5)'
+            },
+            min: 1,
+            max: 5
+          }
+        }
+      }
+    });
+  }
+}
+</script>
+
+
+<!-- ================= INSIGHTS CARD ================= -->
+<section class="card analytics-card">
+  <h3>🧠 Insights</h3>
+
+  {% if weekly_entries %}
+    <ul class="insights">
+      <li>📊 Average mood: <strong>{{ avg_mood }}/5</strong></li>
+      <li>😊 Most common emotion: <strong>{{ common_emotion }}</strong></li>
+      <li>⬆ Best mood: <strong>{{ max_mood }}/5</strong></li>
+      <li>⬇ Lowest mood: <strong>{{ min_mood }}/5</strong></li>
+    </ul>
+  {% else %}
+    <p>No insights yet. Write more entries.</p>
+  {% endif %}
+</section>
+
+<div class="stat">
+  <strong>🔥 Streak</strong>
+  <p>{{ streak }} day{{ 's' if streak != 1 else '' }}</p>
+</div>
+
+
+<!-- ================= WEEKLY DEEP DIVE ================= -->
+<section class="card reflection-card">
+  <h3>🪞 Weekly Reflection</h3>
+
+  <form method="POST" action="{{ url_for('save_weekly_reflection') }}">
+
+    <div class="form-group">
+      <label>🚧 Boundaries check</label>
+      <textarea name="boundary_check" rows="2"
+        placeholder="Did I say no when I needed to this week?"
+        required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>🎯 Goal for next week</label>
+      <textarea name="weekly_goal" rows="2"
+        placeholder="One realistic goal for the coming week"
+        required></textarea>
+    </div>
+
+    <button type="submit" class="primary-btn">Save Reflection</button>
+  </form>
+
+  {% if weekly_reflection %}
+  <div class="saved-reflection">
+    <p><strong>🚧 Boundaries:</strong> {{ weekly_reflection.boundary_check }}</p>
+    <p><strong>🎯 Goal:</strong> {{ weekly_reflection.weekly_goal }}</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ================= EMERGENCY KIT ================= -->
+<section class="card emergency-card">
+  <h3>🆘 In Case of Emergency</h3>
+
+  <details>
+    <summary>🧰 Coping Toolbox</summary>
+    <ul>
+      <li>🌬 4–7–8 breathing</li>
+      <li>🚶 Short walk</li>
+      <li>🎵 Calm music</li>
+      <li>✍ Write without filtering</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>🤝 Support System</summary>
+    <ul>
+      <li>Friend: __________</li>
+      <li>Family: __________</li>
+      <li>Therapist: __________</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>🏞 Safe Space Visualization</summary>
+    <p>
+      Close your eyes. Imagine a place where you feel calm, safe,
+      and supported. Notice colors, sounds, and temperature.
+    </p>
+  </details>
+</section>
+
+
+<!-- ================= MOOD SLIDER ================= -->
+<script>
+const moodSlider = document.getElementById('mood');
+const moodValue = document.getElementById('moodValue');
+
+moodSlider.addEventListener('input', () => {
+    moodValue.textContent = moodSlider.value;
+});
+</script>
+
+{% endblock %}

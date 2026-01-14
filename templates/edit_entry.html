@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Edit Entry</h2>
+
+<form method="post">
+    <textarea name="content" rows="5" required>{{ entry.content }}</textarea><br><br>
+
+    <label>Mood:</label>
+    <input type="range" name="mood" min="1" max="5" value="{{ entry.mood }}">
+
+    <br><br>
+    <button type="submit">Save Changes</button>
+</form>
+
+<a href="{{ url_for('dashboard') }}">← Back</a>
+
+{% endblock %}

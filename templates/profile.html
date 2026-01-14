@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<section class="card">
+    <h2>👤 Profile</h2>
+
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Total Journal Entries:</strong> {{ total_entries }}</p>
+
+    <hr>
+
+    <p>This journal is private and only accessible to you.</p>
+</section>
+
+{% endblock %}
